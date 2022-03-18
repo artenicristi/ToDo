@@ -7,7 +7,7 @@
 # [x] delete <id> - delete a todo item
 
 # Homework
-# [ ] search <query> find todo items
+# [X] search <query> find todo items
 # [X] edit <id> <content> update todo item
 # [X] set-status <id> <status> (check if status is new, in-progress, done or rejected)
 # [X] *Task 3 - add due-date to todo item (if due-date is in past, then show status 'outdated'

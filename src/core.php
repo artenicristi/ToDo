@@ -110,8 +110,6 @@ function delete_item(array $arguments)
     } else {
         print "Nothing to delete" . PHP_EOL . PHP_EOL;
     }
-
-//    save_to_file($items);
 }
 
 function add_item(array $data)
@@ -171,17 +169,6 @@ function list_items($arguments)
     }
 
     print_items($items);
-//    foreach ($items as $item) {
-//        $state = $item['status'] === 'done' ? 'X' : ' '; # ctr + w
-//
-//        print " - [$state] $item[id] from $item[created_at]" . PHP_EOL;
-//        print "   Content  : $item[content]" . PHP_EOL;
-//        print "   Status   : $item[status]" . PHP_EOL;
-//        if (!empty($item['due_date']))
-//            print "   Due Date : $item[due_date]" . PHP_EOL . PHP_EOL;
-//        else
-//            print "\n";
-//    }
 }
 
 function print_items($items)
