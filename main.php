@@ -12,11 +12,9 @@
 # [X] set-status <id> <status> (check if status is new, in-progress, done or rejected)
 # [X] *Task 3 - add due-date to todo item (if due-date is in past, then show status 'outdated'
 
-require_once __DIR__."/src/core.php";
+use Carteni\ToDo2\Application;
 
-$script = array_shift($argv); // app.php
-$command = array_shift($argv); // list
-$args = $argv; // []
+require_once __DIR__."/vendor/autoload.php";
 
-main($command, $args);
+(new Application(getcwd() . '/todo.json', 'TODO-'))->run();
 

@@ -1,0 +1,13 @@
+{
+    "name": "carteni/to-do2",
+    "autoload": {
+        "psr-4": {
+            "Carteni\\ToDo2\\": "src/"
+        }
+    },
+    "require": {
+        "phpstan/phpstan": "^1.4",
+        "phpunit/phpunit": "^9.5",
+        "friendsofphp/php-cs-fixer": "^3.8"
+    }
+}
