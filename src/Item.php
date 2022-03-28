@@ -5,13 +5,14 @@ namespace Carteni\ToDo2;
 class Item
 {
     public function __construct(
-        protected string  $id,
-        protected string  $content,
-        protected string  $status,
-        protected         $dueDate = null,
-        protected ?string $createdAt = null
-    ) {
-        $this->createdAt = $this->createdAt ?? date("d-M-Y H:i:s");
+        protected string                $id,
+        protected string                $content,
+        protected string                $status,
+        protected ?\DateTime            $dueDate = null,
+        protected null|string|\DateTime $createdAt = null
+    )
+    {
+        $this->createdAt = $this->createdAt ?? \DateTime::createFromFormat("d-m-Y H:i:s", date("d-m-Y H:i:s"));
     }
 
     public static function fromArray(array $itemArray): Item
@@ -20,8 +21,8 @@ class Item
             $itemArray['id'] ?? '<unknown>',
             $itemArray['content'] ?? '<unknown>',
             $itemArray['status'] ?? 'outstanding',
-            $itemArray['due_date'],
-            $itemArray['created_at'] ?? '<unknown>',
+            isset($itemArray['due_date']) ? \DateTime::createFromFormat("d-m-Y H:i:s", $itemArray['due_date']) : null,
+            isset($itemArray['created_at']) ? \DateTime::createFromFormat("d-m-Y H:i:s", $itemArray['created_at']) : '<unknown>'
         );
     }
 
@@ -40,12 +41,12 @@ class Item
         return $this->status;
     }
 
-    public function getCreatedAt(): ?string
+    public function getCreatedAt(): \DateTime|string|null
     {
         return $this->createdAt;
     }
 
-    public function getDueDate()
+    public function getDueDate(): ?\DateTime
     {
         return $this->dueDate;
     }
@@ -73,8 +74,8 @@ class Item
             'id' => $this->getId(),
             'content' => $this->getContent(),
             'status' => $this->getStatus(),
-            'created_at' => $this->getCreatedAt(),
-            'due_date' => $this->getDueDate()
+            'created_at' => $this->getCreatedAt()?->format("d-m-Y H:i:s"),
+            'due_date' => $this->getDueDate()?->format("d-m-Y H:i:s")
         ];
     }
 }

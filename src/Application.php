@@ -2,7 +2,7 @@
 
 namespace Carteni\ToDo2;
 
-use _PHPStan_ae8980142\Symfony\Component\Console\Exception\LogicException;
+use LogicException;
 
 class Application
 {
@@ -39,11 +39,12 @@ class Application
                 $this->saveItems();
             }
         }
+        $this->saveItems();
     }
 
     public function help()
     {
-        print "Available commands: list, add, delete, set-status, edit-item, help" . PHP_EOL;
+        print "Available commands: list, add, delete, set-status, edit-item, search_items, help" . PHP_EOL;
     }
 
     public function deleteItem(string $idToDelete): void
@@ -77,10 +78,11 @@ class Application
         }
 
         $item = new Item(
-            id: $this->prefix . ($lastId + 1),
-            content: $content,
-            status: 'new',
-            dueDate: $dueDate === "" ? null : date('d-M-Y H:i:s', strtotime($dueDate))
+            $this->prefix . ($lastId + 1),
+            $content,
+            'new',
+            $dueDate === "" ? null : \DateTime::createFromFormat("d-m-Y H:i:s", $dueDate),
+            null
         );
 
         $this->items[] = $item;
@@ -108,11 +110,13 @@ class Application
     {
         $state = $item->isDone() ? 'X' : ' ';
 
-        print " - [$state] {$item->getId()} from {$item->getCreatedAt()}" . PHP_EOL;
+        print " - [$state] {$item->getId()} from ";
+        print gettype($item->getCreatedAt()) === 'object' ? $item->getCreatedAt()->format("d-M-Y H:i:s") : '<unknown>';
+        print "\n";
         print "   Content  : {$item->getContent()}" . PHP_EOL;
         print "   Status   : {$item->getStatus()}" . PHP_EOL;
         if (!empty($item->getDueDate())) {
-            print "   Due Date  : {$item->getDueDate()}" . PHP_EOL . PHP_EOL;
+            print "   Due Date  : {$item->getDueDate()->format("d-M-Y H:i:s")}" . PHP_EOL . PHP_EOL;
         } else {
             print "\n";
         }

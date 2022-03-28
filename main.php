@@ -17,4 +17,3 @@ use Carteni\ToDo2\Application;
 require_once __DIR__."/vendor/autoload.php";
 
 (new Application(getcwd() . '/todo.json', 'TODO-'))->run();
-
