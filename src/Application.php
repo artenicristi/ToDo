@@ -34,7 +34,6 @@ class Application
                     default => print "Command $cmd not supported" . PHP_EOL
                 };
             } catch (\Throwable $e) {
-                print PHP_EOL . "SAVEEEEEEEEEEEEEEEE" . PHP_EOL;
                 print $e->getMessage() . PHP_EOL . PHP_EOL;
                 $this->saveItems();
             }
