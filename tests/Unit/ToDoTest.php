@@ -80,9 +80,11 @@ class ToDoTest extends TestCase
         $io->expects(self::exactly(0))->method('printLine')->willReturnSelf();
 
         $err = $this->createMock(Error::class);
-        $err->expects(self::once())->method('throwError');
+        $err->expects(self::once())->method('throwError')->willReturnCallback(function ($message) {
+            return;
+        });
 
-        $app = new Application(__DIR__ . "/../../todo.json", "TODO-", $fs, $io, new Error());
+        $app = new Application(__DIR__ . "/../../todo.json", "TODO-", $fs, $io, $err);
         $app->loadItems();
         $app->deleteItem("");
         $finalItems = $app->getItems();
@@ -90,18 +92,14 @@ class ToDoTest extends TestCase
         self::assertSameSize($itemsArray, $finalItems);
     }
 
-    /** @dataProvider ItemsArrayProvider */
-    public function testAddItemSuccessfully(array $itemsArray)
+    /** @dataProvider AddItemProvider */
+    public function testAddItemSuccessfully(string $content, string $dueDate = "")
     {
         $io = $this->createMock(IO::class);
         $io->expects(self::exactly(2))->method('printLine')->willReturnSelf();
 
         $app = new Application(__DIR__ . "/../../todo.json", "TODO-", new Filesystem(), $io);
-        $app->addItem("New Test Item", ""); //success
-//        $app->addItem("New Test Item", "31-3-2022 19:23:15"); //success
-//        $app->addItem("", ""); // unsuccessful
-//        $app->addItem("", "31-3-2022 18:41:11"); // unsuccessful
-
+        $app->addItem($content, $dueDate);
     }
 
 
@@ -117,6 +115,18 @@ class ToDoTest extends TestCase
             ],
             [ //Second case
                 [$item1]
+            ]
+        ];
+    }
+
+    public function AddItemProvider(): array
+    {
+        return [
+            [
+                'New Test Item 1', '31-3-2022 17:23:44'
+            ],
+            [
+                'New Test Item 1'
             ]
         ];
     }
