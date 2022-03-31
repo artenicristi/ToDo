@@ -93,15 +93,10 @@ class ToDoTest extends TestCase
     /** @dataProvider ItemsArrayProvider */
     public function testAddItemSuccessfully(array $itemsArray)
     {
-        $fs = $this->createMock(Filesystem::class);
-        $fs->expects(self::once())->method('exists')->willReturn(true);
-        $fs->expects(self::once())->method('get')->willReturn(json_encode($itemsArray));
-
         $io = $this->createMock(IO::class);
         $io->expects(self::exactly(2))->method('printLine')->willReturnSelf();
 
-        $app = new Application(__DIR__ . "/../../todo.json", "TODO-", $fs, $io);
-        $app->loadItems();
+        $app = new Application(__DIR__ . "/../../todo.json", "TODO-", new Filesystem(), $io);
         $app->addItem("New Test Item", ""); //success
 //        $app->addItem("New Test Item", "31-3-2022 19:23:15"); //success
 //        $app->addItem("", ""); // unsuccessful
