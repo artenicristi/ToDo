@@ -5,77 +5,106 @@ namespace Carteni\ToDo2;
 class Item
 {
     public function __construct(
-        protected string                $id,
-        protected string                $content,
-        protected string                $status,
-        protected ?\DateTime            $dueDate = null,
-        protected null|string|\DateTime $createdAt = null
+        protected bool                $new,
+        protected null|bool|string    $id = false,
+        protected null|bool|string    $content = false,
+        protected null|bool|string    $status = false,
+        protected null|bool|\DateTime $dueDate = false,
+        protected null|bool|\DateTime $createdAt = false
     )
     {
-        $this->createdAt = $this->createdAt ?? \DateTime::createFromFormat("d-m-Y H:i:s", date("d-m-Y H:i:s"));
+        $this->new && $this->createdAt = $this->createdAt ?? \DateTime::createFromFormat("d-m-Y H:i:s", date("d-m-Y H:i:s"));
     }
 
-    public static function fromArray(array $itemArray): Item
+    public
+    static function fromArray(array $itemArray): Item
     {
+        $arrayKeys = array_keys($itemArray);
+
+        $id = false;
+        $content = false;
+        $status = false;
+        $dueDate = false;
+        $createdAt = false;
+
+        in_array('id', $arrayKeys) && $id = $itemArray['id'];
+        in_array('content', $arrayKeys) && $content = $itemArray['content'];
+        in_array('status', $arrayKeys) && $status = $itemArray['status'];
+        in_array('due_date', $arrayKeys) && $dueDate = $itemArray['due_date'];
+        in_array('created_at', $arrayKeys) && $createdAt = $itemArray['created_at'];
+
         return new Item(
-            $itemArray['id'] ?? '<unknown>',
-            $itemArray['content'] ?? '<unknown>',
-            $itemArray['status'] ?? 'outstanding',
-            isset($itemArray['due_date']) ? \DateTime::createFromFormat("d-m-Y H:i:s", $itemArray['due_date']) : null,
-            isset($itemArray['created_at']) ? \DateTime::createFromFormat("d-m-Y H:i:s", $itemArray['created_at']) : '<unknown>'
+            false,
+            $id,
+            $content,
+            $status,
+            $dueDate !== false && $dueDate !== null ? \DateTime::createFromFormat("d-m-Y H:i:s", $dueDate) :
+                (($dueDate === null) ? null : false),
+            $createdAt !== false && $createdAt !== null ? \DateTime::createFromFormat("d-m-Y H:i:s", $createdAt) :
+                (($createdAt === null) ? null : false)
         );
     }
 
-    public function getId(): string
+    public
+    function getId(): null|bool|string
     {
         return $this->id;
     }
 
-    public function getContent(): string
+    public
+    function getContent(): null|bool|string
     {
         return $this->content;
     }
 
-    public function getStatus(): string
+    public
+    function getStatus(): null|bool|string
     {
         return $this->status;
     }
 
-    public function getCreatedAt(): \DateTime|string|null
+    public
+    function getCreatedAt(): null|bool|\DateTime
     {
         return $this->createdAt;
     }
 
-    public function getDueDate(): ?\DateTime
+    public
+    function getDueDate(): null|bool|\DateTime
     {
         return $this->dueDate;
     }
 
-    public function setContent(string $content): Item
+    public
+    function setContent(string $content): Item
     {
         $this->content = $content;
         return $this;
     }
 
-    public function setStatus(string $status): Item
+    public
+    function setStatus(string $status): Item
     {
         $this->status = $status;
         return $this;
     }
 
-    public function isDone(): bool
+    public
+    function isDone(): bool
     {
         return $this->status === 'done';
     }
 
     public function toArray(): array
     {
-        return [
-            'id' => $this->getId(),
-            'content' => $this->getContent(),
-            'status' => $this->getStatus(),
-            'created_at' => $this->getCreatedAt()?->format("d-m-Y H:i:s"),
-            'due_date' => $this->getDueDate()?->format("d-m-Y H:i:s")
-        ];
+        $item = [];
+
+        gettype($this->getId()) !== 'boolean' && $item['id'] = $this->getId();
+        gettype($this->getContent()) !== 'boolean' && $item['content'] = $this->getContent();
+        gettype($this->getStatus()) !== 'boolean' && $item['status'] = $this->getStatus();
+        gettype($this->getDueDate()) !== 'boolean' && $item['due_date'] = $this->getDueDate()?->format("d-m-Y H:i:s");
+        gettype($this->getCreatedAt()) !== 'boolean' && $item['created_at'] = $this->getCreatedAt()?->format("d-m-Y H:i:s");
+
+        return $item;
     }
 }

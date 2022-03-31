@@ -8,6 +8,13 @@
     "require": {
         "phpstan/phpstan": "^1.4",
         "phpunit/phpunit": "^9.5",
-        "friendsofphp/php-cs-fixer": "^3.8"
+        "friendsofphp/php-cs-fixer": "^3.8",
+        "symfony/var-dumper": "^6.0"
+    },
+
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     }
 }

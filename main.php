@@ -13,7 +13,9 @@
 # [X] *Task 3 - add due-date to todo item (if due-date is in past, then show status 'outdated'
 
 use Carteni\ToDo2\Application;
+use Carteni\ToDo2\Filesystem;
+use Carteni\ToDo2\IO;
 
 require_once __DIR__."/vendor/autoload.php";
 
-(new Application(getcwd() . '/todo.json', 'TODO-'))->run();
+(new Application(getcwd() . '/todo.json', 'TODO-', new Filesystem(), new IO()))->run();

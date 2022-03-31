@@ -2,23 +2,27 @@
 
 namespace Carteni\ToDo2;
 
-use LogicException;
-
 class Application
 {
     private array $items = [];
-    private array $arrayStatus;
+    private array $arrayStatus = ['new', 'in-progress', 'done', 'rejected'];
 
     public function __construct(
-        protected string $path,
-        protected string $prefix
-    ) {
-        $this->items = $this->getItems();
-        $this->arrayStatus = ['new', 'in-progress', 'done', 'rejected'];
+        protected string      $path,
+        protected string      $prefix,
+        protected ?Filesystem $fs = null,
+        protected ?IO         $io = null,
+        protected ?Error      $err = null
+    )
+    {
+        $this->fs = $this->fs ?? new Filesystem();
+        $this->io = $this->io ?? new IO();
+        $this->err = $this->err ?? new Error();
     }
 
     public function run()
     {
+        $this->loadItems();
         while ($cmd = readline("todo>")) {
             $this->updateItems();
 
@@ -31,33 +35,39 @@ class Application
                     "edit-item" => $this->editItem(readline("item ID> "), readline("item new content> ")),
                     "set-status" => $this->setStatus(readline("item ID> "), readline("item new status> ")),
                     "search-items" => $this->searchItems(readline("content to search> ")),
-                    default => print "Command $cmd not supported" . PHP_EOL
+                    default => $this->io->printLine("Command $cmd not supported")
                 };
             } catch (\Throwable $e) {
-                print $e->getMessage() . PHP_EOL . PHP_EOL;
-                $this->saveItems();
+                $this->io->printLine($e->getMessage());
+                $this->saveItems($this->items);
             }
         }
-        $this->saveItems();
+        $this->saveItems($this->items);
     }
 
     public function help()
     {
-        print "Available commands: list, add, delete, set-status, edit-item, search_items, help" . PHP_EOL;
+        $this->io
+            ->printLine("Available commands: list, add, delete, set-status, edit-item, search_items, help")
+            ->printLine();
     }
 
     public function deleteItem(string $idToDelete): void
     {
         if (empty($idToDelete)) {
-            throw new LogicException("You didn't provide item ID to delete.");
+            $this->err->throwError("You didn't provide item ID to delete.");
         }
 
-        $filteredItems = array_filter($this->items, fn (Item $item) => $item->getId() !== $idToDelete);
+        $filteredItems = array_filter($this->items, fn(Item $item) => $item->getId() !== $idToDelete);
 
         if (count($this->items) > count($filteredItems)) {
-            print "Item $idToDelete was deleted" . PHP_EOL . PHP_EOL;
+            $this->io
+                ->printLine("Item $idToDelete was deleted")
+                ->printLine();
         } else {
-            print "Nothing to delete" . PHP_EOL . PHP_EOL;
+            $this->io
+                ->printLine("Nothing to delete")
+                ->printLine();
         }
 
         $this->items = $filteredItems;
@@ -66,7 +76,7 @@ class Application
     public function addItem(string $content, string $dueDate): Item
     {
         if (empty($content)) {
-            throw new LogicException("You didn't provide item content.");
+            $this->err->throwError("You didn't provide item content.");
         }
 
         $lastId = 0;
@@ -77,6 +87,7 @@ class Application
         }
 
         $item = new Item(
+            true,
             $this->prefix . ($lastId + 1),
             $content,
             'new',
@@ -86,17 +97,23 @@ class Application
 
         $this->items[] = $item;
 
-        print "Item {$item->getId()} was added." . PHP_EOL . PHP_EOL;
+        $this->io
+            ->printLine("Item {$item->getId()} was added.")
+            ->printLine();
+
         return $item;
     }
 
 
     public function listItems(): void
     {
-        print "## Todo items ##" . PHP_EOL;
+        $this->io
+            ->printLine("## Todo items ##");
 
         if (empty($this->items)) {
-            print "Nothing here yet..." . PHP_EOL . PHP_EOL;
+            $this->io
+                ->printLine("Nothing here yet...")
+                ->printLine();
             return;
         }
 
@@ -108,33 +125,41 @@ class Application
     public function printItem(Item $item): void
     {
         $state = $item->isDone() ? 'X' : ' ';
+        $this->io
+            ->printLine(" - [$state] " . (gettype($item->getId()) !== 'boolean' && $item->getId() !== null ? $item->getId() : "<unknown>") . " from " .
+                (gettype($item->getCreatedAt()) !== 'boolean' ? $item->getCreatedAt()?->format("d-M-Y H:i:s") : "<unknown"));
+        $this->io
+            ->printLine("   Content  : " . (gettype($item->getContent()) !== 'boolean' ? $item->getContent() : "unknown>"));
+        $this->io
+            ->printLine("   Status   : " . (gettype($item->getStatus()) !== 'boolean' ? $item->getStatus() : "<unknown>"));
+        (gettype($item->getDueDate()) !== 'boolean' && $item->getDueDate() !== null &&
+            $this->io
+                ->printLine("   Due Date  : {$item->getDueDate()->format("d-M-Y H:i:s")}"));
 
-        print " - [$state] {$item->getId()} from ";
-        print gettype($item->getCreatedAt()) === 'object' ? $item->getCreatedAt()->format("d-M-Y H:i:s") : '<unknown>';
-        print "\n";
-        print "   Content  : {$item->getContent()}" . PHP_EOL;
-        print "   Status   : {$item->getStatus()}" . PHP_EOL;
-        if (!empty($item->getDueDate())) {
-            print "   Due Date  : {$item->getDueDate()->format("d-M-Y H:i:s")}" . PHP_EOL . PHP_EOL;
-        } else {
-            print "\n";
-        }
+        $this->io
+            ->printLine();
     }
+
+    public function loadItems(): void
+    {
+        if (!$this->fs->exists($this->path)) {
+            $this->saveItems($this->items);
+        }
+
+        $arrayOfItems = json_decode($this->fs->get($this->path), true);
+        $this->items = array_map(fn($item) => Item::fromArray($item), $arrayOfItems);
+    }
+
 
     public function getItems(): array
     {
-        if (!file_exists($this->path)) {
-            $this->saveItems();
-        }
-
-        $arrayOfItems = json_decode(file_get_contents($this->path), true);
-        return array_map(fn ($item) => Item::fromArray($item), $arrayOfItems);
+        return $this->items;
     }
 
-    public function saveItems(): void
+    public function saveItems(array $items): void
     {
-        $itemsArray = array_map(fn (Item $item) => $item->toArray(), $this->items);
-        file_put_contents($this->path, json_encode(array_values($itemsArray), JSON_PRETTY_PRINT));
+        $itemsArray = array_map(fn(Item $item) => $item->toArray(), $items);
+        $this->fs->put($this->path, json_encode(array_values($itemsArray), JSON_PRETTY_PRINT));
     }
 
     public function editItem(string $idToEdit, string $newContent): void
@@ -142,7 +167,7 @@ class Application
         $edited = false;
 
         if (!$newContent) {
-            throw new LogicException("You didn't provide item content.");
+            $this->err->throwError("You didn't provide item content.");
         }
 
         foreach ($this->items as $item) {
@@ -154,16 +179,18 @@ class Application
         }
 
         if (!$edited) {
-            throw new LogicException("Your ID is not correct.");
+            $this->err->throwError("Your ID is not correct.");
         } else {
-            print "Item $idToEdit was edited" . PHP_EOL . PHP_EOL;
+            $this->io
+                ->printLine("Item $idToEdit was edited")
+                ->printLine();
         }
     }
 
     public function setStatus(string $idToEdit, string $newStatus): void
     {
         if (!in_array($newStatus, $this->arrayStatus, true)) {
-            throw new LogicException("Your status is not correct.\nEnter one of this: new, in-progress, done, rejected." . PHP_EOL . PHP_EOL);
+            $this->err->throwError("Your status is not correct.\nEnter one of this: new, in-progress, done, rejected." . PHP_EOL . PHP_EOL);
         }
 
         $edited = false;
@@ -171,7 +198,7 @@ class Application
         foreach ($this->items as $item) {
             if ($item->getId() === $idToEdit) {
                 if ($item->getStatus() === 'outdated') {
-                    throw new LogicException("You can't change [outdated] status");
+                    $this->err->throwError("You can't change [outdated] status");
                 }
                 $edited = true;
                 $item->setStatus($newStatus);
@@ -180,9 +207,11 @@ class Application
         }
 
         if (!$edited) {
-            throw new LogicException("Your ID is not correct.");
+            $this->err->throwError("Your ID is not correct.");
         } else {
-            print "Item's status of item $idToEdit was updated" . PHP_EOL . PHP_EOL;
+            $this->io
+                ->printLine("Item's status of item $idToEdit was updated")
+                ->printLine();
         }
     }
 
@@ -197,14 +226,19 @@ class Application
 
     private function searchItems(string $searchedContent): void
     {
-        $filteredItems = array_filter($this->items, fn ($item) => strpos(strtolower($item->getContent()), $searchedContent));
+        $filteredItems = array_filter($this->items, fn($item) => strpos(strtolower($item->getContent()), $searchedContent));
 
         if (!$filteredItems) {
-            throw new LogicException("This content doesn't exist.");
+            $this->err->throwError("This content doesn't exist.");
         }
 
         foreach ($filteredItems as $item) {
             $this->printItem($item);
         }
+    }
+
+    public function getPath(): string
+    {
+        return $this->path;
     }
 }
